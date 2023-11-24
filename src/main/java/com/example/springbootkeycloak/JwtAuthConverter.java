@@ -1,5 +1,6 @@
 package com.example.springbootkeycloak;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -9,6 +10,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,12 +18,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
+@Component
 public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter =
             new JwtGrantedAuthoritiesConverter();
 
-    private final String principalAtribute = "preferred_username";
+    @Value("${jwt.auth.converter.principle-attribute}")
+    private  String principalAttribute;
+    @Value("${jwt.auth.converter.resource-id}")
+    private  String resourceId ;
 
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
@@ -42,8 +49,8 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
 
     private String getPrincipalClaimName(Jwt jwt) {
         String cliamName = JwtClaimNames.SUB;
-        if(principalAtribute != null){
-            cliamName = principalAtribute;
+        if(principalAttribute != null){
+            cliamName = principalAttribute;
         }
         return jwt.getClaim(cliamName);
 
@@ -57,10 +64,10 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
             return Set.of();
         }
         resourceAccess = jwt.getClaim("resource_access");
-        if (resourceAccess.get("alibou-rest-api") == null) {
+        if (resourceAccess.get(resourceId) == null) {
             return Set.of();
         }
-        resource = (Map<String, Object>) resourceAccess.get("alibou-rest-api");
+        resource = (Map<String, Object>) resourceAccess.get(resourceId);
 
         resourceRoles = (Collection<String>) resource.get("roles");
         Object SimpleGrantedAuthority;
